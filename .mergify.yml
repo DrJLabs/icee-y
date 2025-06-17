@@ -1,0 +1,31 @@
+pull_request_rules:
+  # 1 – label + auto-approve Codex PRs, delete branch after merge
+  - name: flag & fast-track Codex
+    conditions:
+      - author=codex[bot]
+    actions:
+      label:
+        add: [codex]
+      review:
+        type: APPROVE      # counts if you drop mandatory human review
+      delete_head_branch: {}
+
+  # 2 – close dormant PRs after 14 days of inactivity unless exempt
+  - name: close-dormant
+    conditions:
+      - "updated-at < -14d"
+      - "-label~=do-not-close"
+    actions:
+      close: {}
+
+queue_rules:
+  - name: codex-fastlane
+    conditions:
+      - label~=codex
+      - "#approved-reviews-by>=1"      # can be 0 if you rely on auto-approve above
+    checks:
+      - "Azure Pipelines / checks"
+    batch_size: 10                     # 10 PRs merged as one batch
+    speculative_checks: 4              # keep four future batches pre-testing
+    rebase_fallback: reset
+    priority: high
