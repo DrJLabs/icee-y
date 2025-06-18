@@ -1,0 +1,81 @@
+trigger:
+  branches:
+    include:
+      - main
+      - gh-readonly-queue/* # GitHub merge-queue temp branches
+
+pr:
+  drafts: false
+  branches:
+    include:
+      - '*' # every branch PR
+
+variables:
+  NODE_VERSION: 22.4.x
+  PNPM_VERSION: '10.12'
+  PNPM_STORE: $(Pipeline.Workspace)/.pnpm
+  PW_BROWSERS: $(Pipeline.Workspace)/.pw
+
+pool:
+  vmImage: ubuntu-24.04 # free Azure runner
+
+stages:
+  - stage: ci
+    displayName: Quality Gate
+    jobs:
+      - job: checks
+        displayName: Lint • Tests • Coverage
+        steps:
+
+          # ——— Cache pnpm store ———
+          - task: Cache@2
+            displayName: Restore pnpm cache
+            inputs:
+              key: 'pnpm | $(Agent.OS) | pnpm-lock.yaml'
+              path: $(PNPM_STORE)
+
+          # ——— Cache Playwright browser binaries ———
+          - task: Cache@2
+            displayName: Restore Playwright cache
+            inputs:
+              key: 'playwright | $(Agent.OS)'
+              path: $(PW_BROWSERS)
+
+          # ——— Install Playwright browsers (only if cache miss) ———
+          - script: pnpm dlx playwright install --with-deps
+            displayName: Install Playwright browsers
+
+          # ——— Tool-chain & dependencies ———
+          - script: |
+              corepack enable
+              corepack prepare pnpm@$(PNPM_VERSION) --activate
+              pnpm install --frozen-lockfile --config.verify-deps-before-run=true
+            displayName: Install project deps
+
+          # ——— ESLint ———
+          - script: pnpm run lint
+            displayName: ESLint
+
+          # ——— Unit tests + coverage ———
+          - script: pnpm run test -- --coverage
+            displayName: Vitest (unit) + coverage
+
+          # ——— Smoke tests (Playwright) ———
+          - script: pnpm dlx playwright test --config=tests/smoke.config.ts
+            displayName: Playwright smoke tests
+
+          # ——— Upload coverage to Codecov ———
+          - script: |
+              curl -Os https://uploader.codecov.io/latest/linux/codecov
+              chmod +x codecov
+              ./codecov -f coverage/lcov.info -t $(CODECOV_TOKEN)
+            displayName: Upload to Codecov
+            env:
+              CODECOV_TOKEN: $(CODECOV_TOKEN)
+
+          # ——— Generate SBOM ———
+          - script: pnpm dlx @cyclonedx/cyclonedx-node-pnpm@latest --output sbom.xml
+            displayName: Generate CycloneDX SBOM
+
+          - publish: sbom.xml
+            artifact: sbom

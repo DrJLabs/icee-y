@@ -1,5 +1,6 @@
 {
   "name": "next-js-boilerplate",
+  "packageManager": "pnpm@10.12.0",
   "author": "Ixartz (https://github.com/ixartz)",
   "engines": {
     "node": ">=20"
@@ -79,7 +80,7 @@
     "@types/react": "^19.1.8",
     "@vitejs/plugin-react": "^4.5.2",
     "@vitest/browser": "^3.2.3",
-    "@vitest/coverage-v8": "^3.2.3",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vitest/expect": "^3.2.3",
     "checkly": "^5.6.0",
     "chromatic": "^12.2.0",
@@ -105,8 +106,9 @@
     "storybook": "^8.6.14",
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
+    "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.3",
+    "vitest": "^3.2.4",
     "vitest-browser-react": "^0.2.0"
   },
   "release": {
@@ -126,6 +128,5 @@
   },
   "volta": {
     "node": "22.4.1"
-  },
-  "packageManager": "pnpm@10.12.0"
+  }
 }

@@ -60,3 +60,10 @@ build-archive.log
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc
+
+# Ignore removed QuickSort util
+src/utils/QuickSort.js

@@ -7,8 +7,8 @@ pull_request_rules:
       label:
         add: [codex]
       review:
-        type: APPROVE          # auto-approve so the queue rule can count it
-      delete_head_branch: {}   # tidy up after merge
+        type: APPROVE # auto-approve so the queue rule can count it
+      delete_head_branch: {} # tidy up after merge
 
   # 2 — close PRs idle for 14 days (unless explicitly exempt)
   - name: close-dormant
@@ -22,7 +22,7 @@ queue_rules:
   - name: codex-fastlane
     conditions:
       - label~=codex
-      - "#approved-reviews-by>=1"
-      - check-success=Azure Pipelines / checks   # required CI job
-    batch_size: 10          # merge up to 10 PRs as one batch
-    speculative_checks: 4   # keep four future batches pre-testing
+      - '#approved-reviews-by>=1'
+      - check-success=Azure Pipelines / checks # required CI job
+    batch_size: 10 # merge up to 10 PRs as one batch
+    speculative_checks: 4 # keep four future batches pre-testing
