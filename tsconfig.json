@@ -1,1 +1,33 @@
-{ "compilerOptions": { "composite": true, "strict": true }, "references": [] }
+{
+  "compilerOptions": {
+    /* ---------- Module / Resolution ---------- */
+    "module": "esnext",
+    "moduleResolution": "bundler",   // modern resolver for exports maps
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]               // allows `@/…` imports
+    },
+
+    /* ---------- JSX / ES features ---------- */
+    "jsx": "react-jsx",
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+
+    /* ---------- Interop & JSON ---------- */
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* ---------- Strictness ---------- */
+    "strict": true,
+    "skipLibCheck": true,
+
+    /* ---------- Emit ---------- */
+    "noEmit": true,
+    "outDir": "build"
+  },
+
+  /* ---------- Project scope ---------- */
+  "include": ["src", "tests", "vitest.config.mts"],
+  "exclude": ["node_modules", "coverage"]
+}

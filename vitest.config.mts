@@ -10,13 +10,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'), // <-- fixes "@/..." imports
-    },
+    alias: { '@': resolve(__dirname, 'src') }, // "@/..." now works
   },
   test: {
     coverage: {
-      provider: 'v8', // explicit for CI
+      provider: 'v8',
       include: ['src/**/*'],
       exclude: ['src/**/*.stories.{js,jsx,ts,tsx}'],
     },

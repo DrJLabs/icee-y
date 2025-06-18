@@ -72,6 +72,9 @@ importers:
       '@chromatic-com/playwright':
         specifier: ^0.12.5
         version: 0.12.5(@playwright/test@1.53.0)(@swc/core@1.12.1)(@types/react@19.1.8)(esbuild@0.25.5)(prettier@3.5.3)(typescript@5.8.3)
+      '@clerk/types':
+        specifier: ^4.60.1
+        version: 4.60.1
       '@commitlint/cli':
         specifier: ^19.8.1
         version: 19.8.1(@types/node@24.0.3)(typescript@5.8.3)

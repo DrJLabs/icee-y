@@ -55,6 +55,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^4.14.1",
     "@chromatic-com/playwright": "^0.12.5",
+    "@clerk/types": "^4.60.1",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/prompt-cli": "^19.8.1",

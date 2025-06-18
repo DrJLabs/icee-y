@@ -1,18 +1,27 @@
-# Validate commit messages
+# ──────────────────────────────────────────────────────────────
+# Commit-message gate: conventional commits via commitlint
+# ──────────────────────────────────────────────────────────────
 commit-msg:
   commands:
     commitlint:
       run: npx --no -- commitlint --edit {1}
 
-# Validate content before committing
+# ──────────────────────────────────────────────────────────────
+# Pre-commit: lint & type-check only the files you’re staging
+# ──────────────────────────────────────────────────────────────
 pre-commit:
+  parallel: true
+
   commands:
+    # 1. ESLint — staged files only
     lint:
-      glob: '*'
-      run: npx --no -- eslint --fix --no-warn-ignored
-      stage_fixed: true
+      glob: '*.{js,jsx,ts,tsx}'
+      run: npx --no -- eslint {staged_files} --fix --no-warn-ignored
+      stage_fixed: true # add auto-fixed files back to index
       priority: 1
+
+    # 2. TypeScript project check (optional, only when TS files staged)
     check-types:
       glob: '*.{ts,tsx}'
-      run: npm run check-types
+      run: pnpm run check-types
       priority: 2

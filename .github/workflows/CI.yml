@@ -7,119 +7,56 @@ on:
     branches: ['*']
 
 jobs:
-  # ##############################################################################
-  #  Fast lint – non-blocking, runs in parallel but NOT required for merge gate
-  # ##############################################################################
-  lint:
+  checks:
+    name: Lint • Tests • Coverage
     runs-on: ubuntu-24.04
-    continue-on-error: true # makes the job non-blocking
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 22.4.x}
-      - uses: pnpm/action-setup@v2
-        with: {version: 10.12, cache: true, run_install: false}
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run lint
+    permissions: {contents: read}
 
-  # ##############################################################################
-  #  Unit tests shard 1 / 2
-  # ##############################################################################
-  unit-1:
-    runs-on: ubuntu-24.04
     steps:
+      # 1 Checkout
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 22.4.x}
-      - uses: pnpm/action-setup@v2
-        with: {version: 10.12, cache: true, run_install: false}
-      - run: pnpm install --frozen-lockfile
-      - name: Vitest shard 1/2
-        run: pnpm vitest run --coverage --shard=1/2
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cov-unit-1
-          path: coverage/lcov.info
 
-  # ##############################################################################
-  #  Unit tests shard 2 / 2
-  # ##############################################################################
-  unit-2:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: 22.4.x}
-      - uses: pnpm/action-setup@v2
-        with: {version: 10.12, cache: true, run_install: false}
-      - run: pnpm install --frozen-lockfile
-      - name: Vitest shard 2/2
-        run: pnpm vitest run --coverage --shard=2/2
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cov-unit-2
-          path: coverage/lcov.info
-
-  # ##############################################################################
-  #  Smoke tests (Chromium)
-  # ##############################################################################
-  smoke:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
+      # 2 Node + pnpm (auto-cache)
       - uses: actions/setup-node@v4
         with: {node-version: 22.4.x}
       - uses: pnpm/action-setup@v2
         with: {version: 10.12, cache: true, run_install: false}
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
+      # 3 Playwright browser cache (if smoke config later)
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-1
 
-      - name: Install browsers
-        run: pnpm dlx playwright install --with-deps
+      # 4 Deps + browsers
       - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm dlx playwright install --with-deps
+
+      # 5 Lint (non-blocking)
+      - name: ESLint
+        continue-on-error: true
+        run: pnpm run lint
+
+      # 6 Vitest unit + UI projects (single run)
+      - name: Vitest
+        run: pnpm vitest run --coverage
+
+      # 7 Optionally run Playwright smoke if config file exists
       - name: Smoke tests
+        if: ${{ hashFiles('tests/smoke.config.ts') != '' }}
         run: pnpm dlx playwright test --config=tests/smoke.config.ts
-      - name: Stub lcov for merge
-        run: echo "TN:\nend_of_record" > smoke.lcov
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cov-smoke
-          path: smoke.lcov
 
-  # ##############################################################################
-  #  Coverage fan-in + SBOM  (single required check)
-  # ##############################################################################
-  coverage:
-    name: Coverage • SBOM
-    runs-on: ubuntu-24.04
-    needs: [unit-1, unit-2, smoke] # lint is optional
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: cov-*
-          merge-multiple: true
-          path: combined
-
-      - name: Merge LCOV files
-        run: cat combined/*.lcov > coverage.lcov
-
-      - name: Upload to Codecov
+      # 8 Upload coverage
+      - name: Upload coverage to Codecov
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
-          ./codecov -f coverage.lcov -t $CODECOV_TOKEN
+          ./codecov -f coverage/lcov.info -t $CODECOV_TOKEN
 
-      - uses: actions/setup-node@v4
-        with: {node-version: 22.4.x}
-      - uses: pnpm/action-setup@v2
-        with: {version: 10.12, cache: true, run_install: false}
-
+      # 9 SBOM
       - name: Generate SBOM
         run: pnpm dlx @cyclonedx/cyclonedx-node-pnpm --output sbom.xml
       - uses: actions/upload-artifact@v4

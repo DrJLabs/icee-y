@@ -1,10 +1,10 @@
 import type { ChromaticConfig } from '@chromatic-com/playwright';
 import { defineConfig, devices } from '@playwright/test';
 
-// Use process.env.PORT by default and fallback to port 3000
-const PORT = process.env.PORT || 3000;
+// Use process.env.PORT when provided, otherwise fall back to port 3001
+const PORT = process.env.PORT || 3001;
 
-// Set webServer.url and use.baseURL with the location of the WebServer respecting the correct set port
+// Set webServer.url and use.baseURL to point at the chosen port
 const baseURL = `http://localhost:${PORT}`;
 
 /**
@@ -26,10 +26,11 @@ export default defineConfig<ChromaticConfig>({
     timeout: 10 * 1000,
   },
 
-  // Run your local dev server before starting the tests:
-  // https://playwright.dev/docs/test-advanced#launching-a-development-web-server-during-the-tests
+  // Launch your local dev server before the tests
   webServer: {
-    command: process.env.CI ? 'npx pglite-server --run "npm run start"' : 'npx run-p db-server:memory dev:next',
+    command: process.env.CI
+      ? 'npx pglite-server --run "npm run start"'
+      : 'npx run-p db-server:memory dev:next',
     url: baseURL,
     timeout: 2 * 60 * 1000,
     reuseExistingServer: !process.env.CI,
@@ -38,19 +39,12 @@ export default defineConfig<ChromaticConfig>({
     },
   },
 
-  // Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions.
+  // Shared settings for all projects
   use: {
-    // Use baseURL so to make navigations relative.
-    // More information: https://playwright.dev/docs/api/class-testoptions#test-options-base-url
     baseURL,
-
-    // Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
     trace: 'retain-on-failure',
-
-    // Record videos when retrying the failed test.
     video: process.env.CI ? 'retain-on-failure' : undefined,
-
-    // Disable automatic screenshots at test completion when using Chromatic test fixture.
+    // Disable automatic screenshots at test completion when using Chromatic test fixture
     disableAutoSnapshot: true,
   },
 
