@@ -6,48 +6,233 @@ on:
   pull_request:
     branches: ['*']
 
+# Cancel in-progress runs for same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  checks:
-    name: Lint • Tests • Coverage
+  # =============================================================================
+  # Lint Job - Fast feedback, runs independently
+  # =============================================================================
+  lint:
+    name: 🔍 Lint & Type Check
     runs-on: ubuntu-24.04
-    permissions: {contents: read}
-
     steps:
-      # 1 Checkout
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # 2 Node + pnpm (auto-cache)
-      - uses: actions/setup-node@v4
-        with: {node-version: 22.4.x}
-      - uses: pnpm/action-setup@v2
-        with: {version: 10.12, cache: true, run_install: false}
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with: 
+          node-version: 22.4.x
+          cache: 'pnpm'
 
-      # 3 Playwright browser cache (if smoke config later)
-      - uses: actions/cache@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with: 
+          version: 10.12
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: Type check
+        run: pnpm run check-types
+
+  # =============================================================================
+  # Unit Tests - All unit/component tests with coverage
+  # =============================================================================
+  unit-tests:
+    name: 🧪 Unit Tests & Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with: 
+          node-version: 22.4.x
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with: 
+          version: 10.12
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests with coverage
+        run: pnpm vitest run --coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 1
+
+  # =============================================================================
+  # E2E Tests - Playwright with optimized caching
+  # =============================================================================
+  e2e-tests:
+    name: 🎭 E2E Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with: 
+          node-version: 22.4.x
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with: 
+          version: 10.12
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-1
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
-      # 4 Deps + browsers
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browsers
         run: pnpm dlx playwright install --with-deps
 
-      # 5 Lint (non-blocking)
-      - name: ESLint
-        continue-on-error: true
-        run: pnpm run lint
+      - name: Run E2E tests
+        run: pnpm run test:e2e
 
-      # 6 Vitest unit + UI projects (single run)
-      - name: Vitest
-        run: pnpm vitest run --coverage
+  # =============================================================================
+  # Integration Tests - Playwright API tests
+  # =============================================================================
+  integration-tests:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # 7 Optionally run Playwright smoke if config file exists
-      - name: Smoke tests
-        if: ${{ hashFiles('tests/smoke.config.ts') != '' }}
-        run: pnpm dlx playwright test --config=tests/smoke.config.ts
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with: 
+          node-version: 22.4.x
+          cache: 'pnpm'
 
-      # 8 Upload coverage
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with: 
+          version: 10.12
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm dlx playwright install --with-deps
+
+      - name: Run integration tests
+        run: pnpm dlx playwright test tests/integration/
+
+  # =============================================================================
+  # Coverage upload & SBOM - Depends on unit tests
+  # =============================================================================
+  coverage:
+    name: 📊 Coverage & SBOM
+    runs-on: ubuntu-24.04
+    needs: [unit-tests]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with: 
+          node-version: 22.4.x
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with: 
+          version: 10.12
+          run_install: false
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+
       - name: Upload coverage to Codecov
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -56,10 +241,41 @@ jobs:
           chmod +x codecov
           ./codecov -f coverage/lcov.info -t $CODECOV_TOKEN
 
-      # 9 SBOM
       - name: Generate SBOM
-        run: pnpm dlx @cyclonedx/cyclonedx-node-pnpm --output sbom.xml
-      - uses: actions/upload-artifact@v4
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm dlx @cyclonedx/cyclonedx-node-pnpm --output sbom.xml
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.xml
+
+  # =============================================================================
+  # Status check - Required for merge gate
+  # =============================================================================
+  ci-success:
+    name: ✅ CI Success
+    runs-on: ubuntu-24.04
+    needs: [lint, unit-tests, e2e-tests, integration-tests, coverage]
+    if: always()
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [[ "${{ needs.lint.result }}" == "success" && 
+                "${{ needs.unit-tests.result }}" == "success" && 
+                "${{ needs.e2e-tests.result }}" == "success" && 
+                "${{ needs.integration-tests.result }}" == "success" && 
+                "${{ needs.coverage.result }}" == "success" ]]; then
+            echo "✅ All CI jobs passed!"
+            exit 0
+          else
+            echo "❌ One or more CI jobs failed:"
+            echo "  Lint: ${{ needs.lint.result }}"
+            echo "  Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "  E2E Tests: ${{ needs.e2e-tests.result }}"
+            echo "  Integration Tests: ${{ needs.integration-tests.result }}"
+            echo "  Coverage: ${{ needs.coverage.result }}"
+            exit 1
+          fi
