@@ -1,4 +1,4 @@
-# Boilerplate and Starter for Next.js 15+, Tailwind CSS 4, and TypeScript. -- icee-y
+# Boilerplate and Starter for Next.js 15+, Tailwind CSS 4, and TypeScript. -- icee-y 22
 
 <p align="center">
   <a href="https://demo.nextjs-boilerplate.com">
