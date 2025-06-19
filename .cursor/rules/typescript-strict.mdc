@@ -1,0 +1,298 @@
+---
+description: "Typescript Strict agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# TypeScript Strict Mode Standards
+
+This rule enforces TypeScript best practices based on the project's strict mode configuration.
+
+## Type Definition Standards
+
+### Interface vs Type Usage
+Follow the project's ESLint rule: Use `type` instead of `interface`
+
+```typescript
+// ✅ CORRECT: Use type definitions
+type UserProfile = {
+  readonly id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+};
+
+// ❌ AVOID: Interface definitions (per ESLint config)
+interface UserProfile {
+  id: string;
+  name: string;
+}
+```
+
+### Path Alias Usage
+Always use the configured `@/*` path alias for src imports:
+
+```typescript
+// ✅ CORRECT: Use path alias
+import { UserProfile } from '@/types/User';
+import { validateEmail } from '@/utils/Helpers';
+import { CounterForm } from '@/components/CounterForm';
+
+// ❌ AVOID: Relative imports from src
+import { UserProfile } from '../../../types/User';
+import { validateEmail } from '../../utils/Helpers';
+```
+
+## Strict Mode Compliance
+
+### Non-Null Assertions
+Avoid non-null assertions unless absolutely necessary:
+
+```typescript
+// ✅ CORRECT: Proper null checking
+const user = getUserById(id);
+if (user) {
+  console.log(user.name);
+}
+
+// ❌ AVOID: Non-null assertion without checking
+const user = getUserById(id)!;
+console.log(user.name);
+```
+
+### Function Return Types
+Always specify return types for functions:
+
+```typescript
+// ✅ CORRECT: Explicit return type
+function calculateTotal(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+
+// ✅ CORRECT: Async function with Promise type
+async function fetchUser(id: string): Promise<User | null> {
+  const response = await fetch(`/api/users/${id}`);
+  return response.ok ? response.json() : null;
+}
+
+// ❌ AVOID: Implicit return types
+function calculateTotal(items: CartItem[]) {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+```
+
+### Proper Error Handling
+Type errors properly and handle all error cases:
+
+```typescript
+// ✅ CORRECT: Typed error handling
+type ApiError = {
+  message: string;
+  code: number;
+  details?: string;
+};
+
+type ApiResponse<T> = {
+  data: T;
+  error?: ApiError;
+};
+
+async function apiCall<T>(url: string): Promise<ApiResponse<T>> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return {
+        data: null as T,
+        error: {
+          message: 'Request failed',
+          code: response.status,
+        },
+      };
+    }
+    const data = await response.json();
+    return { data };
+  } catch (error) {
+    return {
+      data: null as T,
+      error: {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: 500,
+      },
+    };
+  }
+}
+```
+
+## React TypeScript Patterns
+
+### Component Props Typing
+Always type component props explicitly:
+
+```typescript
+// ✅ CORRECT: Explicit props typing
+type ButtonProps = {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger';
+  disabled?: boolean;
+  onClick?: () => void;
+};
+
+export default function Button({ children, variant = 'primary', disabled, onClick }: ButtonProps) {
+  return (
+    <button 
+      className={`btn btn-${variant}`}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ❌ AVOID: Implicit any props
+export default function Button(props) {
+  return <button>{props.children}</button>;
+}
+```
+
+### Event Handler Typing
+Type event handlers properly:
+
+```typescript
+// ✅ CORRECT: Proper event typing
+type FormData = {
+  email: string;
+  password: string;
+};
+
+export default function LoginForm() {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    // Handle form submission
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    // Handle input change
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="email" onChange={handleInputChange} />
+    </form>
+  );
+}
+```
+
+### Ref Typing
+Use proper ref typing:
+
+```typescript
+// ✅ CORRECT: Typed refs
+import { useRef } from 'react';
+
+export default function FocusInput() {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const focusInput = (): void => {
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div>
+      <input ref={inputRef} type="text" />
+      <button onClick={focusInput}>Focus Input</button>
+    </div>
+  );
+}
+```
+
+## Database and API Types
+
+### Drizzle Schema Types
+Leverage Drizzle's type inference:
+
+```typescript
+// ✅ CORRECT: Infer types from schema
+import { users } from '@/models/Schema';
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
+
+type User = InferSelectModel<typeof users>;
+type NewUser = InferInsertModel<typeof users>;
+
+// Use in functions
+async function createUser(userData: NewUser): Promise<User> {
+  const [user] = await db.insert(users).values(userData).returning();
+  return user;
+}
+```
+
+### API Response Types
+Define consistent API response types:
+
+```typescript
+// ✅ CORRECT: Consistent API types
+type ApiSuccessResponse<T> = {
+  success: true;
+  data: T;
+  message?: string;
+};
+
+type ApiErrorResponse = {
+  success: false;
+  error: {
+    message: string;
+    code: string;
+    details?: unknown;
+  };
+};
+
+type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+// Use in API routes
+export async function GET(): Promise<NextResponse<ApiResponse<User[]>>> {
+  try {
+    const users = await getUsers();
+    return NextResponse.json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: {
+        message: 'Failed to fetch users',
+        code: 'FETCH_ERROR',
+      },
+    });
+  }
+}
+```
+
+## Environment Variables
+
+### Type-safe Environment Access
+Use the existing @t3-oss/env-nextjs configuration:
+
+```typescript
+// ✅ CORRECT: Use typed env from libs/Env.ts
+import { Env } from '@/libs/Env';
+
+// Access environment variables through typed config
+const apiUrl = Env.API_URL;
+const isProduction = Env.NODE_ENV === 'production';
+
+// ❌ AVOID: Direct process.env access
+const apiUrl = process.env.API_URL;
+```
+
+## Critical Rules
+
+1. **Strict Types**: No `any` types unless absolutely necessary
+2. **Path Aliases**: Always use `@/*` for src imports
+3. **Return Types**: Explicit return types for all functions
+4. **Null Safety**: Proper null/undefined checking
+5. **Props Typing**: Explicit component props typing
+6. **Event Typing**: Proper React event handler typing
+7. **Schema Types**: Use Drizzle type inference
+8. **Env Safety**: Use typed environment configuration
+9. **Error Handling**: Type and handle all error cases
+10. **Type Over Interface**: Follow ESLint rule for type vs interface

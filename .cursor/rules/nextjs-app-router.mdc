@@ -1,0 +1,214 @@
+---
+description: "Nextjs App Router agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# Next.js 15 App Router Standards
+
+This rule ensures consistent development practices for Next.js 15+ with App Router architecture.
+
+## App Router File Conventions
+
+### Page and Layout Files
+- **page.tsx**: Route segments (use default export)
+- **layout.tsx**: Shared UI for route segments (must accept children prop)
+- **loading.tsx**: Loading UI (use default export)
+- **error.tsx**: Error UI (must be 'use client' component)
+- **not-found.tsx**: Not found UI for route segments
+
+### Special Files
+- **route.ts**: API route handlers (export named HTTP methods)
+- **template.tsx**: Re-renders on navigation (when layout doesn't re-render)
+- **head.tsx**: Deprecated in App Router - use Metadata API instead
+- **global-error.tsx**: Root error boundary
+
+## Route Structure Patterns
+
+### File-based Routing
+```typescript
+// ✅ CORRECT: Use default exports for pages
+export default function HomePage() {
+  return <div>Home Page</div>;
+}
+
+// ✅ CORRECT: Use metadata export for SEO
+export const metadata = {
+  title: 'Home Page',
+  description: 'Welcome to our application',
+};
+
+// ❌ AVOID: Named exports for page components
+export function HomePage() { /* ... */ }
+```
+
+### Dynamic Routes
+```typescript
+// ✅ CORRECT: Dynamic segment naming
+// File: src/app/portfolio/[slug]/page.tsx
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default async function PortfolioPage({ params }: PageProps) {
+  const { slug } = await params;
+  // ...
+}
+
+// ✅ CORRECT: Catch-all segments
+// File: src/app/docs/[...path]/page.tsx
+interface DocsPageProps {
+  params: Promise<{ path: string[] }>;
+}
+```
+
+## Server vs Client Components
+
+### Server Components (Default)
+- **Use for**: Data fetching, backend resources, sensitive information
+- **Cannot**: Use hooks, event handlers, browser APIs
+- **Can**: Be async functions
+
+```typescript
+// ✅ CORRECT: Server component with async data
+export default async function ProductsPage() {
+  const products = await fetchProducts();
+  return <ProductList products={products} />;
+}
+```
+
+### Client Components
+- **Use 'use client'** directive at top of file
+- **Use for**: Interactivity, hooks, browser APIs
+
+```typescript
+'use client';
+
+// ✅ CORRECT: Client component for interactivity
+import { useState } from 'react';
+
+export default function CounterForm() {
+  const [count, setCount] = useState(0);
+  // ...
+}
+```
+
+## Data Fetching Patterns
+
+### Server-Side Data Fetching
+```typescript
+// ✅ CORRECT: Direct async/await in server components
+export default async function UserProfile({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUserById(id);
+  
+  if (!user) {
+    notFound(); // Next.js helper function
+  }
+  
+  return <UserDetails user={user} />;
+}
+```
+
+### Error Handling
+```typescript
+// ✅ CORRECT: Error boundary component
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>Something went wrong!</h2>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+## API Routes (App Router)
+
+### Route Handlers
+```typescript
+// ✅ CORRECT: API route with proper HTTP methods
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  // Handle GET request
+  return NextResponse.json({ data: 'example' });
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  // Handle POST request
+  return NextResponse.json({ success: true });
+}
+```
+
+### Dynamic API Routes
+```typescript
+// File: src/app/api/users/[id]/route.ts
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  // ...
+}
+```
+
+## Metadata and SEO
+
+### Static Metadata
+```typescript
+export const metadata = {
+  title: 'Page Title',
+  description: 'Page description',
+  openGraph: {
+    title: 'OG Title',
+    description: 'OG Description',
+  },
+};
+```
+
+### Dynamic Metadata
+```typescript
+export async function generateMetadata({ params }: PageProps) {
+  const { slug } = await params;
+  const post = await getPost(slug);
+  
+  return {
+    title: post.title,
+    description: post.excerpt,
+  };
+}
+```
+
+## International Routing (next-intl)
+
+### Locale-based Structure
+```typescript
+// ✅ CORRECT: Locale in URL structure
+// File: src/app/[locale]/page.tsx
+import { useTranslations } from 'next-intl';
+
+export default function HomePage() {
+  const t = useTranslations('HomePage');
+  return <h1>{t('title')}</h1>;
+}
+```
+
+## Critical Rules
+
+1. **Server First**: Default to server components unless interactivity needed
+2. **Async Params**: Always await params in App Router (Next.js 15+)
+3. **Metadata API**: Use metadata exports instead of Head component
+4. **Error Boundaries**: Include error.tsx for graceful error handling
+5. **Loading States**: Provide loading.tsx for better UX
+6. **Client Directive**: Only use 'use client' when necessary
+7. **Route Handlers**: Use proper HTTP method exports in API routes
+8. **Type Safety**: Always type params and searchParams properly

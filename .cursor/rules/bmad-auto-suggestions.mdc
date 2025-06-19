@@ -1,0 +1,59 @@
+---
+description: "Bmad Auto Suggestions agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# BMAD Auto-Suggestions Rule
+
+This rule provides contextual suggestions for BMAD agent usage based on user queries and project context.
+
+## Context-Aware Agent Suggestions
+
+When users ask about tasks that could benefit from specialized BMAD agents, suggest the appropriate agent:
+
+### Development Tasks
+- Architecture questions → Suggest `@architect`
+- Implementation/coding → Suggest `@dev`
+- User stories/requirements → Suggest `@po`
+- Testing strategy → Suggest `@qa`
+- UI/UX design → Suggest `@ux-expert`
+
+### Project Management
+- Project planning → Suggest `@pm`
+- Sprint planning → Suggest `@sm`
+- Market research → Suggest `@analyst`
+- Workflow coordination → Suggest `@bmad-orchestrator`
+
+### Specialized Domains
+- Game development → Suggest `@game-designer` or `@game-developer`
+- Infrastructure/DevOps → Suggest `@infra-devops-platform`
+- Creating new agent types → Suggest `@bmad-the-creator`
+
+## Quick Help Template
+
+When suggesting agents, use this format:
+
+```
+💡 **BMAD Suggestion**: This looks like a job for the [Agent Name] agent!
+
+Try: `@agent-name` to activate the specialized persona
+Then: `*help` to see available commands and capabilities
+
+The [Agent Name] can help you with [specific capabilities].
+```
+
+## Auto-Discovery Triggers
+
+Automatically suggest BMAD agents when users mention:
+- "plan", "architecture", "design" → Architecture/planning agents
+- "implement", "code", "build" → Development agents  
+- "test", "quality", "bug" → QA agents
+- "user", "story", "requirement" → PO agents
+- "workflow", "process", "manage" → Management agents
+
+## Learning Prompts
+
+Help users learn the BMAD method by occasionally suggesting:
+- "Try `@bmad-orchestrator` and then `*workflow-guidance` for project planning"
+- "Use `*help` with any agent to see their specialized commands"
+- "Switch between agents using `@agent-name` for different perspectives"

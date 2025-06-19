@@ -1,0 +1,369 @@
+---
+description: "Drizzle Database agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# Drizzle ORM and Database Standards
+
+This rule enforces consistent database patterns using Drizzle ORM and PGLite.
+
+## Schema Definition Standards
+
+### Table Definitions
+Follow consistent patterns for table definitions:
+
+```typescript
+// ✅ CORRECT: Consistent table structure
+import { pgTable, serial, text, timestamp, boolean } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  clerkId: text('clerk_id').notNull().unique(),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+});
+
+export const posts = pgTable('posts', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  content: text('content'),
+  authorId: serial('author_id').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+```
+
+### Naming Conventions
+- **Tables**: `snake_case` (e.g., `user_profiles`, `blog_posts`)
+- **Columns**: `snake_case` (e.g., `created_at`, `user_id`)
+- **Schema Objects**: `camelCase` (e.g., `userProfiles`, `blogPosts`)
+
+### Type Inference
+Always use Drizzle's type inference for type safety:
+
+```typescript
+// ✅ CORRECT: Type inference from schema
+import type { InferSelectModel, InferInsertModel } from 'drizzle-orm';
+import { users, posts } from '@/models/Schema';
+
+// Infer types from schema
+export type User = InferSelectModel<typeof users>;
+export type NewUser = InferInsertModel<typeof users>;
+export type Post = InferSelectModel<typeof posts>;
+export type NewPost = InferInsertModel<typeof posts>;
+
+// Use in functions
+export async function createUser(userData: NewUser): Promise<User> {
+  const [user] = await db.insert(users).values(userData).returning();
+  return user;
+}
+
+// ❌ AVOID: Manual type definitions that can drift
+type User = {
+  id: number;
+  clerkId: string;
+  email: string;
+  // ... manual types that might become outdated
+};
+```
+
+## Database Connection Patterns
+
+### PGLite Configuration
+Use consistent database connection patterns:
+
+```typescript
+// ✅ CORRECT: Proper database setup
+import { PGlite } from '@electric-sql/pglite';
+import { drizzle } from 'drizzle-orm/pglite';
+import * as schema from '@/models/Schema';
+
+// Use environment-specific database
+const client = new PGlite(
+  process.env.NODE_ENV === 'production' 
+    ? process.env.DATABASE_URL 
+    : 'local.db'
+);
+
+export const db = drizzle(client, { schema });
+
+// ❌ AVOID: Hardcoded database paths
+const client = new PGlite('hardcoded.db');
+```
+
+### Connection Management
+Implement proper connection management:
+
+```typescript
+// ✅ CORRECT: Connection with error handling
+export async function withDatabase<T>(
+  operation: (db: typeof db) => Promise<T>
+): Promise<T> {
+  try {
+    const result = await operation(db);
+    return result;
+  } catch (error) {
+    console.error('Database operation failed:', error);
+    throw new Error('Database operation failed');
+  }
+}
+```
+
+## Query Patterns
+
+### Basic CRUD Operations
+Use consistent query patterns:
+
+```typescript
+// ✅ CORRECT: Consistent query patterns
+import { eq, and, desc, count } from 'drizzle-orm';
+import { db } from '@/libs/DB';
+import { users, posts } from '@/models/Schema';
+
+// Create
+export async function createUser(userData: NewUser): Promise<User> {
+  const [user] = await db
+    .insert(users)
+    .values(userData)
+    .returning();
+  return user;
+}
+
+// Read
+export async function getUserById(id: number): Promise<User | null> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return user || null;
+}
+
+// Update
+export async function updateUser(id: number, data: Partial<NewUser>): Promise<User> {
+  const [user] = await db
+    .update(users)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(users.id, id))
+    .returning();
+  return user;
+}
+
+// Delete
+export async function deleteUser(id: number): Promise<void> {
+  await db.delete(users).where(eq(users.id, id));
+}
+```
+
+### Complex Queries
+Structure complex queries for readability:
+
+```typescript
+// ✅ CORRECT: Well-structured complex query
+export async function getUserPostsWithStats(userId: number) {
+  const result = await db
+    .select({
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      },
+      posts: posts,
+      postCount: count(posts.id),
+    })
+    .from(users)
+    .leftJoin(posts, eq(users.id, posts.authorId))
+    .where(eq(users.id, userId))
+    .groupBy(users.id, posts.id)
+    .orderBy(desc(posts.createdAt));
+
+  return result;
+}
+```
+
+### Pagination
+Implement consistent pagination:
+
+```typescript
+// ✅ CORRECT: Pagination pattern
+export async function getPaginatedPosts(
+  page: number = 1, 
+  limit: number = 10
+): Promise<{ posts: Post[]; total: number; hasMore: boolean }> {
+  const offset = (page - 1) * limit;
+
+  const [postsResult, totalResult] = await Promise.all([
+    db
+      .select()
+      .from(posts)
+      .orderBy(desc(posts.createdAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ count: count() })
+      .from(posts)
+  ]);
+
+  const total = totalResult[0].count;
+  const hasMore = offset + limit < total;
+
+  return {
+    posts: postsResult,
+    total,
+    hasMore,
+  };
+}
+```
+
+## Migration Standards
+
+### Migration Files
+Follow consistent migration patterns:
+
+```sql
+-- ✅ CORRECT: Clear migration structure
+-- File: migrations/0001_add_users_table.sql
+
+CREATE TABLE IF NOT EXISTS "users" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "clerk_id" text NOT NULL,
+  "email" text NOT NULL,
+  "name" text NOT NULL,
+  "created_at" timestamp DEFAULT now() NOT NULL,
+  "updated_at" timestamp DEFAULT now() NOT NULL,
+  "is_active" boolean DEFAULT true NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "users_clerk_id_idx" ON "users" ("clerk_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "users_email_idx" ON "users" ("email");
+
+-- Add comments for complex tables
+COMMENT ON TABLE "users" IS 'User accounts integrated with Clerk authentication';
+COMMENT ON COLUMN "users"."clerk_id" IS 'Clerk user ID for authentication integration';
+```
+
+### Schema Generation
+Use proper Drizzle Kit commands:
+
+```bash
+# ✅ CORRECT: Generate migrations
+npm run db:generate
+
+# ✅ CORRECT: Apply migrations
+npm run db:migrate
+
+# ✅ CORRECT: View database in studio
+npm run db:studio
+```
+
+## Error Handling and Validation
+
+### Database Error Handling
+Implement consistent error handling:
+
+```typescript
+// ✅ CORRECT: Database error handling
+export async function safeCreateUser(userData: NewUser): Promise<{
+  success: boolean;
+  user?: User;
+  error?: string;
+}> {
+  try {
+    const user = await createUser(userData);
+    return { success: true, user };
+  } catch (error) {
+    if (error instanceof Error) {
+      // Handle unique constraint violations
+      if (error.message.includes('duplicate key')) {
+        return { success: false, error: 'User already exists' };
+      }
+    }
+    return { success: false, error: 'Failed to create user' };
+  }
+}
+```
+
+### Input Validation
+Use Zod validation with Drizzle types:
+
+```typescript
+// ✅ CORRECT: Validation schema matching database schema
+import { z } from 'zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { users } from '@/models/Schema';
+
+// Generate validation schemas from Drizzle schema
+export const insertUserSchema = createInsertSchema(users, {
+  email: z.string().email(),
+  name: z.string().min(1).max(100),
+});
+
+export const selectUserSchema = createSelectSchema(users);
+export const updateUserSchema = insertUserSchema.partial();
+
+// Use in API routes
+export async function validateAndCreateUser(input: unknown): Promise<User> {
+  const validatedData = insertUserSchema.parse(input);
+  return createUser(validatedData);
+}
+```
+
+## Performance Optimization
+
+### Query Optimization
+Follow performance best practices:
+
+```typescript
+// ✅ CORRECT: Optimized queries
+// Use indexes effectively
+export async function findUserByEmail(email: string): Promise<User | null> {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email)) // Uses email index
+    .limit(1);
+  return user || null;
+}
+
+// Batch operations when possible
+export async function createMultipleUsers(usersData: NewUser[]): Promise<User[]> {
+  return db.insert(users).values(usersData).returning();
+}
+
+// ❌ AVOID: N+1 queries
+// Instead of multiple individual queries, use joins or batch operations
+```
+
+### Connection Pooling
+For production, consider connection pooling patterns:
+
+```typescript
+// ✅ CORRECT: Connection pooling consideration
+// Note: PGLite is file-based, but for PostgreSQL:
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+
+// Example for production PostgreSQL setup
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum number of connections
+});
+
+export const prodDb = drizzle(pool);
+```
+
+## Critical Rules
+
+1. **Type Inference**: Always use Drizzle's `InferSelectModel` and `InferInsertModel`
+2. **Naming Consistency**: snake_case for DB, camelCase for TypeScript
+3. **Migration Safety**: Never modify existing migrations, create new ones
+4. **Error Handling**: Wrap database operations in try-catch blocks
+5. **Validation**: Use Drizzle-Zod for input validation
+6. **Indexing**: Create indexes for frequently queried columns
+7. **Connection Management**: Proper database connection setup
+8. **Query Optimization**: Avoid N+1 queries, use joins and batching
+9. **Environment Config**: Use environment-specific database configuration
+10. **Schema Comments**: Document complex tables and relationships

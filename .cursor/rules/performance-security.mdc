@@ -1,0 +1,523 @@
+---
+description: "Performance Security agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# Performance and Security Standards
+
+This rule enforces performance optimization and security best practices for Next.js applications.
+
+## 🔄 Git Workflow for Performance & Security Changes
+
+When implementing performance or security improvements, follow this workflow:
+
+### Stage and Commit Pattern
+```bash
+# After implementing performance/security changes
+git add .
+git commit -m "perf/security: optimize [component/feature] for performance and security
+
+- Implement image optimization with Next.js Image
+- Add security headers and CSRF protection
+- Optimize bundle size with dynamic imports
+- Follow performance-security standards"
+```
+
+### Hook Failure Recovery
+```bash
+# Fix any issues that arise
+pnpm lint:fix
+pnpm typecheck
+pnpm test
+
+# Re-stage and commit
+git add .
+git commit -m "fix: resolve performance/security implementation issues
+
+- Fix ESLint violations in security code
+- Resolve TypeScript issues in optimization
+- Ensure all security tests pass"
+```
+
+## Performance Optimization
+
+### Image Optimization
+Always use Next.js Image component for optimal performance:
+
+```typescript
+// ✅ CORRECT: Next.js Image component
+import Image from 'next/image';
+
+export default function ProductCard({ product }: { product: Product }) {
+  return (
+    <div>
+      <Image
+        src={product.imageUrl}
+        alt={product.name}
+        width={300}
+        height={200}
+        priority={false} // Only set true for above-the-fold images
+        placeholder="blur"
+        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+      />
+    </div>
+  );
+}
+
+// ❌ AVOID: Regular img tags
+<img src={product.imageUrl} alt={product.name} />
+```
+
+### Code Splitting and Dynamic Imports
+Implement proper code splitting:
+
+```typescript
+// ✅ CORRECT: Dynamic imports for code splitting
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+
+// Lazy load heavy components
+const HeavyChart = dynamic(() => import('@/components/HeavyChart'), {
+  loading: () => <div>Loading chart...</div>,
+  ssr: false, // Skip SSR for client-only components
+});
+
+const ConditionalComponent = dynamic(
+  () => import('@/components/ConditionalComponent'),
+  { ssr: false }
+);
+
+export default function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+      <Suspense fallback={<div>Loading...</div>}>
+        <HeavyChart />
+      </Suspense>
+    </div>
+  );
+}
+
+// ❌ AVOID: Importing heavy components statically when not always needed
+import HeavyChart from '@/components/HeavyChart'; // Always bundled
+```
+
+### Bundle Analysis and Optimization
+Monitor and optimize bundle size:
+
+```typescript
+// ✅ CORRECT: Tree-shakeable imports
+import { debounce } from 'lodash-es';
+import { format } from 'date-fns';
+
+// ❌ AVOID: Full library imports
+import _ from 'lodash'; // Imports entire library
+import * as dateFns from 'date-fns'; // Imports everything
+```
+
+### Web Vitals Optimization
+Optimize for Core Web Vitals:
+
+```typescript
+// ✅ CORRECT: Performance monitoring
+import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+
+export function reportWebVitals() {
+  getCLS(console.log);
+  getFID(console.log);
+  getFCP(console.log);
+  getLCP(console.log);
+  getTTFB(console.log);
+}
+
+// ✅ CORRECT: Optimizing LCP with priority loading
+export default function Hero() {
+  return (
+    <div>
+      <Image
+        src="/hero-image.jpg"
+        alt="Hero"
+        width={1200}
+        height={600}
+        priority // Critical for LCP
+      />
+    </div>
+  );
+}
+```
+
+### Memory Management
+Prevent memory leaks:
+
+```typescript
+// ✅ CORRECT: Proper cleanup in useEffect
+import { useEffect, useState } from 'react';
+
+export default function TimerComponent() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCount(c => c + 1);
+    }, 1000);
+
+    // Cleanup function to prevent memory leaks
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Handle resize
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Always clean up event listeners
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return <div>Count: {count}</div>;
+}
+```
+
+## Security Best Practices
+
+### Environment Variables Security
+Secure environment variable handling:
+
+```typescript
+// ✅ CORRECT: Secure environment access
+import { Env } from '@/libs/Env';
+
+// Client-safe variables (prefixed with NEXT_PUBLIC_)
+const publicApiUrl = Env.NEXT_PUBLIC_API_URL;
+const isProduction = Env.NODE_ENV === 'production';
+
+// Server-only variables (no NEXT_PUBLIC_ prefix)
+const secretKey = Env.SECRET_KEY; // Only available server-side
+
+// ❌ AVOID: Direct process.env access without validation
+const apiKey = process.env.API_KEY; // Could be undefined
+const dbUrl = process.env.DATABASE_URL; // No type safety
+```
+
+### Input Validation and Sanitization
+Always validate and sanitize user inputs:
+
+```typescript
+// ✅ CORRECT: Input validation with Zod
+import { z } from 'zod';
+import { NextRequest, NextResponse } from 'next/server';
+
+const createUserSchema = z.object({
+  name: z.string().min(1).max(100).trim(),
+  email: z.string().email().toLowerCase(),
+  age: z.number().int().min(0).max(150),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const validatedData = createUserSchema.parse(body);
+    
+    // Safe to use validatedData
+    const user = await createUser(validatedData);
+    
+    return NextResponse.json({ success: true, user });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: error.errors },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// ❌ AVOID: Direct use of unvalidated input
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  // body could be anything - security risk!
+  const user = await createUser(body);
+}
+```
+
+### SQL Injection Prevention
+Use proper database patterns:
+
+```typescript
+// ✅ CORRECT: Drizzle ORM with type safety
+import { db } from '@/libs/DB';
+import { users } from '@/models/Schema';
+import { eq } from 'drizzle-orm';
+
+export async function getUserByEmail(email: string) {
+  // Drizzle automatically prevents SQL injection
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+    
+  return user[0];
+}
+
+// ❌ AVOID: Raw SQL queries without sanitization
+export async function getUserByEmail(email: string) {
+  // SQL injection vulnerability!
+  const query = `SELECT * FROM users WHERE email = '${email}'`;
+  return await db.raw(query);
+}
+```
+
+### XSS Prevention
+Sanitize outputs and use secure patterns:
+
+```typescript
+// ✅ CORRECT: Safe HTML rendering
+import DOMPurify from 'isomorphic-dompurify';
+
+interface SafeHTMLProps {
+  html: string;
+  className?: string;
+}
+
+export function SafeHTML({ html, className }: SafeHTMLProps) {
+  const sanitizedHTML = DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'strong', 'em', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: [],
+  });
+
+  return (
+    <div 
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+    />
+  );
+}
+
+// ❌ AVOID: Unsanitized HTML injection
+export function UnsafeHTML({ html }: { html: string }) {
+  // XSS vulnerability!
+  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+}
+```
+
+### Authentication and Authorization
+Implement secure auth patterns:
+
+```typescript
+// ✅ CORRECT: Secure authentication check
+import { auth } from '@clerk/nextjs';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  const { userId } = auth();
+  
+  if (!userId) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+  
+  // Verify user has required permissions
+  const user = await getUserById(userId);
+  if (!user || !user.isActive) {
+    return NextResponse.json(
+      { error: 'Forbidden' },
+      { status: 403 }
+    );
+  }
+  
+  // Safe to proceed with authenticated request
+  return NextResponse.json({ data: 'protected data' });
+}
+
+// ❌ AVOID: Missing authentication checks
+export async function GET(request: NextRequest) {
+  // No auth check - anyone can access!
+  return NextResponse.json({ data: 'sensitive data' });
+}
+```
+
+### CSRF Protection
+Implement CSRF protection:
+
+```typescript
+// ✅ CORRECT: CSRF protection with headers
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  // Check for CSRF token in headers
+  const csrfToken = request.headers.get('x-csrf-token');
+  const expectedToken = await getCSRFToken(request);
+  
+  if (!csrfToken || csrfToken !== expectedToken) {
+    return NextResponse.json(
+      { error: 'Invalid CSRF token' },
+      { status: 403 }
+    );
+  }
+  
+  // Safe to process the request
+  return NextResponse.json({ success: true });
+}
+
+// ❌ AVOID: No CSRF protection on state-changing operations
+export async function POST(request: NextRequest) {
+  // Vulnerable to CSRF attacks!
+  const body = await request.json();
+  await updateUserData(body);
+}
+```
+
+### Rate Limiting
+Implement rate limiting with Arcjet:
+
+```typescript
+// ✅ CORRECT: Rate limiting with Arcjet
+import arcjet, { tokenBucket } from '@arcjet/next';
+
+const aj = arcjet({
+  key: process.env.ARCJET_KEY!,
+  rules: [
+    tokenBucket({
+      mode: 'LIVE',
+      capacity: 100,
+      interval: 3600, // 1 hour
+      refillRate: 100,
+    }),
+  ],
+});
+
+export async function POST(request: NextRequest) {
+  const decision = await aj.protect(request);
+  
+  if (decision.isDenied()) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded' },
+      { status: 429 }
+    );
+  }
+  
+  // Safe to process the request
+  return NextResponse.json({ success: true });
+}
+```
+
+## Monitoring and Logging
+
+### Error Handling and Logging
+Implement comprehensive error handling:
+
+```typescript
+// ✅ CORRECT: Structured error handling
+import { logger } from '@/libs/Logger';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const result = await processData(body);
+    
+    logger.info('Data processed successfully', {
+      userId: result.userId,
+      operation: 'process_data',
+    });
+    
+    return NextResponse.json(result);
+  } catch (error) {
+    logger.error('Data processing failed', {
+      error: error.message,
+      stack: error.stack,
+      url: request.url,
+      method: request.method,
+    });
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// ❌ AVOID: Silent failures or console.log
+export async function POST(request: NextRequest) {
+  try {
+    const result = await processData(body);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.log(error); // Not structured, lost in production
+    return NextResponse.json({ error: 'Something went wrong' });
+  }
+}
+```
+
+### Performance Monitoring
+Monitor application performance:
+
+```typescript
+// ✅ CORRECT: Performance monitoring
+import { performance } from 'perf_hooks';
+import { logger } from '@/libs/Logger';
+
+export async function performanceWrapper<T>(
+  operation: () => Promise<T>,
+  operationName: string
+): Promise<T> {
+  const startTime = performance.now();
+  
+  try {
+    const result = await operation();
+    const duration = performance.now() - startTime;
+    
+    logger.info('Operation completed', {
+      operation: operationName,
+      duration: `${duration.toFixed(2)}ms`,
+      success: true,
+    });
+    
+    return result;
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    
+    logger.error('Operation failed', {
+      operation: operationName,
+      duration: `${duration.toFixed(2)}ms`,
+      error: error.message,
+    });
+    
+    throw error;
+  }
+}
+
+// Usage
+export async function GET(request: NextRequest) {
+  return performanceWrapper(
+    async () => {
+      const data = await fetchExpensiveData();
+      return NextResponse.json(data);
+    },
+    'fetch_expensive_data'
+  );
+}
+```
+
+## Critical Performance & Security Rules
+
+1. **Never expose secrets**: Use environment validation and never commit secrets
+2. **Always validate inputs**: Use Zod or similar for all user inputs  
+3. **Implement authentication**: Protect all sensitive endpoints with proper auth
+4. **Use HTTPS everywhere**: Enforce secure connections in production
+5. **Optimize images**: Always use Next.js Image component for optimization
+6. **Monitor performance**: Track Core Web Vitals and optimize accordingly
+7. **Log security events**: Monitor and log all authentication and authorization events
+8. **Regular security audits**: Run `pnpm audit` and update dependencies regularly
+9. **Stage and commit systematically**: Use git workflow patterns for tracking changes
+10. **Test security measures**: Include security testing in your test strategy

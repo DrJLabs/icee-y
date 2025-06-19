@@ -1,0 +1,460 @@
+---
+description: "Testing Standards agent rule for BMAD system"
+globs: []
+alwaysApply: false
+---
+# Testing Standards
+
+This rule enforces consistent testing practices using Vitest for unit/integration tests and Playwright for E2E testing.
+
+## 📋 Testing Strategy Reference
+
+**IMPORTANT**: All testing activities must align with our comprehensive [Testing Strategy Document](docs/testing-strategy.md), which defines:
+- Test architecture and separation of concerns
+- Coverage targets and quality metrics  
+- CI/CD integration patterns
+- Phase-based implementation roadmap
+
+Always reference this document when making testing decisions or implementing new test patterns.
+
+## 🔄 Git Workflow for Test Implementation
+
+When implementing tests, AI agents should follow this workflow:
+
+### Stage and Commit Pattern
+```bash
+# After creating/modifying test files
+git add .
+git commit -m "test: add comprehensive test coverage for [component/feature]
+
+- Add unit tests for [specific functionality]
+- Add integration tests for [API/service behavior]  
+- Add E2E tests for [user journey]
+- Ensure 80%+ coverage maintained
+- Follow testing-strategy.md patterns"
+```
+
+### Hook Failure Recovery
+If pre-commit hooks fail:
+```bash
+# Fix linting issues
+pnpm lint:fix
+
+# Fix type issues  
+pnpm typecheck
+
+# Re-run tests
+pnpm test
+
+# Re-stage and commit
+git add .
+git commit -m "fix: resolve linting and test issues
+
+- Fix ESLint violations
+- Resolve TypeScript type issues
+- Ensure all tests pass
+- Maintain code quality standards"
+```
+
+## Test File Organization
+
+### File Naming Conventions
+Follow the established patterns:
+
+```
+// ✅ CORRECT: Test file naming
+src/components/CounterForm.test.tsx    // Component tests
+src/utils/Helpers.test.ts              // Utility function tests
+tests/integration/Counter.spec.ts      // Integration tests  
+tests/e2e/I18n.e2e.ts                 // E2E tests
+```
+
+### Test Directory Structure
+```
+tests/
+├── e2e/                 # Playwright E2E tests
+│   ├── Counter.e2e.ts
+│   ├── I18n.e2e.ts
+│   └── Visual.e2e.ts
+├── integration/         # Playwright API tests
+│   └── Counter.spec.ts
+└── fixtures/           # Test data and fixtures
+```
+
+## Unit Testing with Vitest
+
+### Component Testing Patterns
+Use consistent component testing patterns:
+
+```typescript
+// ✅ CORRECT: Component test structure
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import CounterForm from '@/components/CounterForm';
+
+describe('CounterForm', () => {
+  it('should render initial counter value', () => {
+    render(<CounterForm initialValue={5} />);
+    
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /increment/i })).toBeInTheDocument();
+  });
+
+  it('should increment counter when button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<CounterForm initialValue={0} />);
+    
+    const incrementButton = screen.getByRole('button', { name: /increment/i });
+    await user.click(incrementButton);
+    
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+  });
+
+  it('should call onValueChange when counter changes', async () => {
+    const onValueChange = vi.fn();
+    const user = userEvent.setup();
+    
+    render(<CounterForm initialValue={0} onValueChange={onValueChange} />);
+    
+    const incrementButton = screen.getByRole('button', { name: /increment/i });
+    await user.click(incrementButton);
+    
+    expect(onValueChange).toHaveBeenCalledWith(1);
+  });
+});
+```
+
+### Utility Function Testing
+Test utility functions thoroughly:
+
+```typescript
+// ✅ CORRECT: Utility function tests
+import { describe, it, expect } from 'vitest';
+import { formatDate, validateEmail, calculateAge } from '@/utils/Helpers';
+
+describe('Helpers', () => {
+  describe('formatDate', () => {
+    it('should format date in YYYY-MM-DD format', () => {
+      const date = new Date('2024-01-15');
+      expect(formatDate(date)).toBe('2024-01-15');
+    });
+
+    it('should handle invalid dates', () => {
+      expect(formatDate(new Date('invalid'))).toBe('Invalid Date');
+    });
+  });
+
+  describe('validateEmail', () => {
+    it.each([
+      ['user@example.com', true],
+      ['invalid-email', false],
+      ['user@', false],
+      ['@example.com', false],
+    ])('should validate email %s as %s', (email, expected) => {
+      expect(validateEmail(email)).toBe(expected);
+    });
+  });
+});
+```
+
+### API Route Testing
+Test API routes with proper setup:
+
+```typescript
+// ✅ CORRECT: API route testing
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
+import { GET, POST } from '@/app/api/counter/route';
+
+describe('/api/counter', () => {
+  beforeEach(() => {
+    // Setup test database or mocks
+  });
+
+  afterEach(() => {
+    // Cleanup
+  });
+
+  describe('GET', () => {
+    it('should return current counter value', async () => {
+      const request = new NextRequest('http://localhost:3000/api/counter');
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data).toHaveProperty('count');
+      expect(typeof data.count).toBe('number');
+    });
+  });
+
+  describe('POST', () => {
+    it('should increment counter', async () => {
+      const request = new NextRequest('http://localhost:3000/api/counter', {
+        method: 'POST',
+        body: JSON.stringify({ increment: 1 }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+    });
+
+    it('should handle invalid input', async () => {
+      const request = new NextRequest('http://localhost:3000/api/counter', {
+        method: 'POST',
+        body: JSON.stringify({ increment: 'invalid' }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(400);
+    });
+  });
+});
+```
+
+## Integration Testing with Playwright
+
+### Setup and Configuration
+Use proper Playwright configuration:
+
+```typescript
+// ✅ CORRECT: Playwright integration test
+import { test, expect } from '@playwright/test';
+
+test.describe('Counter Integration', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/counter');
+  });
+
+  test('should persist counter value between page reloads', async ({ page }) => {
+    // Increment counter
+    await page.getByRole('button', { name: /increment/i }).click();
+    await expect(page.getByTestId('counter-value')).toHaveText('1');
+
+    // Reload page
+    await page.reload();
+
+    // Check if value persisted
+    await expect(page.getByTestId('counter-value')).toHaveText('1');
+  });
+
+  test('should handle API failures gracefully', async ({ page }) => {
+    // Mock API failure
+    await page.route('/api/counter', (route) => {
+      route.fulfill({ status: 500, body: 'Server Error' });
+    });
+
+    await page.getByRole('button', { name: /increment/i }).click();
+    
+    // Check error handling
+    await expect(page.getByText('Something went wrong')).toBeVisible();
+  });
+});
+```
+
+## E2E Testing with Playwright
+
+### User Journey Testing
+Focus on complete user workflows:
+
+```typescript
+// ✅ CORRECT: E2E user journey
+import { test, expect } from '@playwright/test';
+
+test.describe('User Authentication Journey', () => {
+  test('should complete full signup and login flow', async ({ page }) => {
+    // Navigate to signup
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Sign Up' }).click();
+    
+    // Fill signup form
+    await page.getByLabel('Email').fill('test@example.com');
+    await page.getByLabel('Password').fill('SecurePassword123!');
+    await page.getByRole('button', { name: 'Create Account' }).click();
+    
+    // Verify email verification page
+    await expect(page.getByText('Please verify your email')).toBeVisible();
+    
+    // Navigate to login (simulating email verification)
+    await page.goto('/sign-in');
+    await page.getByLabel('Email').fill('test@example.com');
+    await page.getByLabel('Password').fill('SecurePassword123!');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    
+    // Verify successful login
+    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+  });
+});
+```
+
+### Internationalization Testing
+Test language switching and content:
+
+```typescript
+// ✅ CORRECT: I18n testing
+import { test, expect } from '@playwright/test';
+
+test.describe('Internationalization', () => {
+  test('should switch between English and French', async ({ page }) => {
+    await page.goto('/');
+    
+    // Verify English content
+    await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
+    
+    // Switch to French
+    await page.getByLabel('Language Switcher').selectOption('fr');
+    
+    // Verify French content
+    await expect(page.getByRole('heading', { name: 'Bienvenue' })).toBeVisible();
+    
+    // Verify URL changed
+    await expect(page).toHaveURL(/\/fr$/);
+  });
+});
+```
+
+### Visual Testing
+Implement visual regression testing:
+
+```typescript
+// ✅ CORRECT: Visual regression testing
+import { test, expect } from '@playwright/test';
+
+test.describe('Visual Regression', () => {
+  test('should match homepage snapshot', async ({ page }) => {
+    await page.goto('/');
+    
+    // Wait for content to load
+    await page.waitForSelector('[data-testid="main-content"]');
+    
+    // Take full page screenshot
+    await expect(page).toHaveScreenshot('homepage.png');
+  });
+
+  test('should match mobile layout', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/');
+    
+    await expect(page).toHaveScreenshot('homepage-mobile.png');
+  });
+});
+```
+
+## Test Data and Fixtures
+
+### Test Data Management
+Create reusable test data:
+
+```typescript
+// ✅ CORRECT: Test fixtures
+// tests/fixtures/users.ts
+export const testUsers = {
+  validUser: {
+    email: 'test@example.com',
+    password: 'SecurePassword123!',
+    name: 'Test User',
+  },
+  adminUser: {
+    email: 'admin@example.com',
+    password: 'AdminPassword123!',
+    name: 'Admin User',
+    role: 'admin',
+  },
+} as const;
+
+// tests/fixtures/products.ts
+export const testProducts = {
+  basicProduct: {
+    name: 'Test Product',
+    price: 29.99,
+    description: 'A test product for our test suite',
+  },
+} as const;
+```
+
+### Database Test Setup
+Use proper database isolation:
+
+```typescript
+// ✅ CORRECT: Database test setup
+import { beforeEach, afterEach } from 'vitest';
+import { db } from '@/libs/DB';
+
+beforeEach(async () => {
+  // Start transaction for test isolation
+  await db.beginTransaction();
+});
+
+afterEach(async () => {
+  // Rollback transaction to clean state
+  await db.rollbackTransaction();
+});
+```
+
+## Test Coverage and Quality
+
+### Coverage Configuration
+Maintain comprehensive coverage:
+
+```typescript
+// ✅ CORRECT: Vitest coverage config (vitest.config.mts)
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      reportsDirectory: 'coverage',
+      include: ['src/**/*'],
+      exclude: [
+        'src/**/*.stories.{js,jsx,ts,tsx}',
+        'src/**/*.test.{js,jsx,ts,tsx}',
+        'src/**/*.spec.{js,jsx,ts,tsx}',
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+      },
+    },
+  },
+});
+```
+
+### Test Performance
+Keep tests fast and reliable:
+
+```typescript
+// ✅ CORRECT: Efficient test patterns
+describe('Fast API tests', () => {
+  // Use parallel execution for independent tests
+  test.concurrent('should handle multiple requests', async () => {
+    // Test implementation
+  });
+  
+  // Mock external dependencies
+  beforeEach(() => {
+    vi.mock('@/libs/external-api', () => ({
+      fetchData: vi.fn().mockResolvedValue({ data: 'mocked' }),
+    }));
+  });
+});
+```
+
+## Critical Testing Rules
+
+1. **Always run tests before commits**: `pnpm test`
+2. **Maintain 80%+ coverage**: Monitor with `pnpm test:coverage`
+3. **Test all user journeys**: Critical paths must have E2E coverage
+4. **Mock external dependencies**: Keep tests isolated and fast
+5. **Use TypeScript in tests**: Maintain type safety throughout
+6. **Follow testing strategy**: Align with [docs/testing-strategy.md](docs/testing-strategy.md)
+7. **Stage and commit systematically**: Use git workflow patterns above
