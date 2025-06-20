@@ -59,7 +59,7 @@ This architecture is designed to support the gameplay mechanics defined in the G
 
 [[LLM: Design a clear folder structure for game development]]
 
-````text
+```text
 {{game_name}}/
 ├── src/
 │   ├── scenes/          # Game scenes
@@ -80,7 +80,7 @@ This architecture is designed to support the gameplay mechanics defined in the G
 │   ├── stories/         # Development stories
 │   └── architecture/    # Technical docs
 └── dist/                # Built game files
-```text
+```
 
 ### Module Organization
 
@@ -365,7 +365,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     },
     // Additional configuration...
 };
-```text
+```
 
 ### Game Balance Configuration
 
@@ -386,7 +386,7 @@ export const GameBalance = {
     },
     // Additional balance parameters...
 };
-````
+```
 
 ## Development Guidelines
 

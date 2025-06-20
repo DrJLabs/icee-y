@@ -2,7 +2,7 @@
 
 [[LLM: This template is for creating agent team configurations in YAML format. Follow the structure carefully and replace all placeholders with appropriate values. The team name should reflect the team's purpose and domain focus.]]
 
-````yaml
+```yaml
 bundle:
   name: {{team-display-name}}
   [[LLM: Use format "Team [Descriptor]" for generic teams or "[Domain] Team" for specialized teams. Examples: "Team Fullstack", "Healthcare Team", "Legal Team"]]
@@ -83,7 +83,7 @@ workflows:
   - {{workflow-name}}  # {{workflow-description}}
   <</REPEAT>>
   ^^/CONDITION: domain-workflows^^
-```text
+```
 
 @{example-1: Standard fullstack team}
 
@@ -107,11 +107,11 @@ workflows:
   - brownfield-fullstack
   - brownfield-service
   - brownfield-ui
-````
+```
 
 @{example-2: Healthcare expansion pack team}
 
-````yaml
+```yaml
 bundle:
   name: Healthcare Compliance Team
   icon: ⚕️
@@ -127,7 +127,7 @@ workflows:
   - healthcare-patient-portal
   - healthcare-compliance-audit
   - clinical-trial-management
-```text
+```
 
 @{example-3: Minimal IDE team}
 
@@ -141,7 +141,7 @@ agents:
   - architect
   - dev
 workflows: null
-````
+```
 
 [[LLM: When creating a new team configuration:
 

@@ -122,9 +122,10 @@ Difficulty
     |/     /
     +-----------> Level Number
    Tutorial  Early  Mid  Late
-```text
+````
 
 **Scaling Parameters:**
+
 - Enemy count: {{start_count}} → {{end_count}}
 - Enemy difficulty: {{start_diff}} → {{end_diff}}
 - Level complexity: {{start_complex}} → {{end_complex}}
@@ -135,6 +136,7 @@ Difficulty
 [[LLM: Define how players access new levels]]
 
 **Progression Gates:**
+
 - Linear progression: Complete previous level
 - Star requirements: {{star_count}} stars to unlock
 - Skill gates: Demonstrate {{skill_requirement}}
@@ -149,14 +151,17 @@ Difficulty
 [[LLM: Define all environmental components that can be used in levels]]
 
 **Terrain Types:**
+
 - {{terrain_1}}: {{properties_and_usage}}
 - {{terrain_2}}: {{properties_and_usage}}
 
 **Interactive Objects:**
+
 - {{object_1}}: {{behavior_and_purpose}}
 - {{object_2}}: {{behavior_and_purpose}}
 
 **Hazards and Obstacles:**
+
 - {{hazard_1}}: {{damage_and_behavior}}
 - {{hazard_2}}: {{damage_and_behavior}}
 
@@ -165,15 +170,18 @@ Difficulty
 [[LLM: Define all collectible items and their placement rules]]
 
 **Collectible Types:**
+
 - {{collectible_1}}: {{value_and_purpose}}
 - {{collectible_2}}: {{value_and_purpose}}
 
 **Placement Guidelines:**
+
 - Mandatory collectibles: {{placement_rules}}
 - Optional collectibles: {{placement_rules}}
 - Secret collectibles: {{placement_rules}}
 
 **Reward Distribution:**
+
 - Easy to find: {{percentage}}%
 - Moderate challenge: {{percentage}}%
 - High skill required: {{percentage}}%
@@ -183,15 +191,18 @@ Difficulty
 [[LLM: Define how enemies should be placed and balanced in levels]]
 
 **Enemy Categories:**
+
 - {{enemy_type_1}}: {{behavior_and_usage}}
 - {{enemy_type_2}}: {{behavior_and_usage}}
 
 **Placement Principles:**
+
 - Introduction encounters: {{guideline}}
 - Standard encounters: {{guideline}}
 - Challenge encounters: {{guideline}}
 
 **Difficulty Scaling:**
+
 - Enemy count progression: {{scaling_rule}}
 - Enemy type introduction: {{pacing_rule}}
 - Encounter complexity: {{complexity_rule}}
@@ -203,12 +214,14 @@ Difficulty
 ### Level Layout Principles
 
 **Spatial Design:**
+
 - Grid size: {{grid_dimensions}}
 - Minimum path width: {{width_units}}
 - Maximum vertical distance: {{height_units}}
 - Safe zones placement: {{safety_guidelines}}
 
 **Navigation Design:**
+
 - Clear path indication: {{visual_cues}}
 - Landmark placement: {{landmark_rules}}
 - Dead end avoidance: {{dead_end_policy}}
@@ -219,11 +232,13 @@ Difficulty
 [[LLM: Define how to control the rhythm and pace of gameplay within levels]]
 
 **Action Sequences:**
+
 - High intensity duration: {{max_duration}}
 - Rest period requirement: {{min_rest_time}}
 - Intensity variation: {{pacing_pattern}}
 
 **Learning Sequences:**
+
 - New mechanic introduction: {{teaching_method}}
 - Practice opportunity: {{practice_duration}}
 - Skill application: {{application_context}}
@@ -233,12 +248,14 @@ Difficulty
 [[LLM: Define how to create appropriate challenges for each level type]]
 
 **Challenge Types:**
+
 - Execution challenges: {{skill_requirements}}
 - Puzzle challenges: {{complexity_guidelines}}
 - Time challenges: {{time_pressure_rules}}
 - Resource challenges: {{resource_management}}
 
 **Difficulty Calibration:**
+
 - Skill check frequency: {{frequency_guidelines}}
 - Failure recovery: {{retry_mechanics}}
 - Hint system integration: {{help_system}}
@@ -252,11 +269,13 @@ Difficulty
 [[LLM: Define how level data should be structured for implementation]]
 
 **Level File Format:**
+
 - Data format: {{json|yaml|custom}}
 - File naming: `level_{{world}}_{{number}}.{{extension}}`
 - Data organization: {{structure_description}}
 
 **Required Data Fields:**
+
 ```json
 {
   "levelId": "{{unique_identifier}}",
@@ -281,7 +300,7 @@ Difficulty
     }
   ]
 }
-````
+```
 
 ### Asset Integration
 

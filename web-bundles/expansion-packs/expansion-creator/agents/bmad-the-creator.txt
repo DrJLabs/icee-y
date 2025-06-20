@@ -160,7 +160,7 @@ Created during agent setup:
 - Templates:
   - [ ] template-name-1.md
   - [ ] template-name-2.md
-```text
+```
 
 ### 4. Create Agent File
 
@@ -218,7 +218,7 @@ Present to the user:
    1. Review and customize the created tasks/templates
    2. Run npm run build:agents
    3. Test the agent thoroughly
-```text
+```
 
 ## Template Reference
 
@@ -247,7 +247,7 @@ persona:
     - Data integrity and accuracy above all
     - Clear communication of complex findings
     - Actionable insights over raw numbers
-```text
+```
 
 ## Creating Missing Dependencies
 
@@ -280,12 +280,12 @@ When a required task or template doesn't exist:
 ```yaml
 dependencies:
   tasks:
-    - 'create-doc # Required if agent creates any documents'
-    - 'analyze-requirements # Custom task for this agent'
-    - 'generate-report # Another custom task'
+    - create-doc
+    - analyze-requirements
+    - generate-report
   templates:
-    - 'requirements-doc # Template for requirements documents'
-    - 'analysis-report # Template for analysis reports'
+    - requirements-doc
+    - analysis-report
 ```
 
 ## Notes
@@ -973,7 +973,7 @@ Before declaring complete:
 
 **README Structure with Character Introduction:**
 
-````markdown
+```markdown
 # {Pack Name} Expansion Pack
 
 ## Meet Your {Domain} Team
@@ -998,9 +998,7 @@ _{Professional background and expertise}_
 
 2. **Launch Orchestrator**:
 
-   ```bash
    npm run agent {pack-name}-orchestrator
-   ```
 
 3. **Follow Numbered Options**: {Character Name} will present numbered choices for each decision
 
@@ -1030,7 +1028,7 @@ _{Professional background and expertise}_
 ### Knowledge Base
 
 [Embedded domain expertise]
-````
+```
 
 #### 6.3 Advanced Data File Documentation with Validation
 
@@ -1748,6 +1746,7 @@ activation-instructions:
     - Only read the files/tasks listed here when user selects them for execution to minimize context usage
     - The customization field ALWAYS takes precedence over any conflicting instructions
     - When listing tasks/templates or presenting options during conversations, always show as numbered options list, allowing the user to type a number to select or execute
+    - Command
 
 agent:
   name: [AGENT_NAME]
@@ -1768,7 +1767,9 @@ persona:
     # Add more principles as needed
 
 startup:
-  - [STARTUP_INSTRUCTIONS]
+  - Greet the user with your name and role, and inform of the *help command.
+  - [STARTUP_INSTRUCTION]
+  - [STARTUP_INSTRUCTION]...
 
 commands:
   - "*help" - Show: numbered list of the following commands to allow selection
@@ -1799,7 +1800,7 @@ dependencies:
     - [TEMPLATE_1]  # Template with LLM instructions for guided creation
     - [TEMPLATE_2]  # Another template for different document type
     [[LLM: Example: blueprint-tmpl, contract-tmpl, report-tmpl
-    Each template should include [[LLM: guidance]] and other conventions from `template-formmat.md` sections for user interaction]]
+    Each template should include [[LLM: guidance]] and other conventions from `template-format.md` sections for user interaction]]
 
   checklists:
     - [CHECKLIST_1]  # Quality validation for template outputs
@@ -1815,7 +1816,7 @@ dependencies:
     - template-format  # Required if using templates
     - [UTIL_1]        # Other utilities as needed
     [[LLM: Include workflow-management if agent participates in workflows]]
-```text
+```
 
 @{example: Construction Contractor Agent}
 
@@ -1854,21 +1855,21 @@ commands:
   - '*exit" - Say goodbye as Marcus and exit'
 dependencies:
   tasks:
-    - 'create-doc          # For document creation'
-    - 'validate-plans      # Custom validation task'
-    - 'safety-assessment   # Custom safety review task'
+    - create-doc
+    - validate-plans
+    - safety-assessment
   templates:
-    - 'blueprint-tmpl      # Architectural blueprint template'
-    - 'estimate-tmpl       # Cost estimation template'
-    - 'schedule-tmpl       # Project timeline template'
+    - blueprint-tmpl
+    - estimate-tmpl
+    - schedule-tmpl
   checklists:
-    - 'blueprint-checklist # Validates blueprint completeness'
-    - 'safety-checklist    # Safety compliance validation'
+    - blueprint-checklist
+    - safety-checklist
   data:
-    - 'building-codes.md   # Local building code reference'
-    - 'materials-guide.md  # Construction materials specs'
+    - building-codes.md
+    - materials-guide.md
   utils:
-    - 'template-format     # For template processing'
+    - template-format
 ```
 ==================== END: templates#agent-tmpl ====================
 

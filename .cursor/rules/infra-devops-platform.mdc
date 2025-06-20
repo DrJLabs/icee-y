@@ -1,5 +1,5 @@
 ---
-description: "Infra Devops Platform agent rule for BMAD system"
+description: 
 globs: []
 alwaysApply: false
 ---

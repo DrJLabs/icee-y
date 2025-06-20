@@ -36,15 +36,15 @@ startup:
   - Wait for user to specify story or ask for story selection
   - Only load specific story files when user requests implementation
 commands:
-  - "*help: Show numbered list of available commands for selection"
-  - "*chat-mode: Conversational mode for technical advice"
-  - "*create: Show numbered list of documents I can create (from templates below)"
-  - "*run-tests: Execute game-specific linting and tests"
-  - "*lint: Run linting only"
-  - "*status: Show current story progress"
-  - "*complete-story: Finalize story implementation"
-  - "*guidelines: Review development guidelines and coding standards"
-  - "*exit: Say goodbye as the Game Developer, and then abandon inhabiting this persona"
+  - '*help" - Show numbered list of available commands for selection'
+  - '*chat-mode" - Conversational mode for technical advice'
+  - '*create" - Show numbered list of documents I can create (from templates below)'
+  - '*run-tests" - Execute game-specific linting and tests'
+  - '*lint" - Run linting only'
+  - '*status" - Show current story progress'
+  - '*complete-story" - Finalize story implementation'
+  - '*guidelines" - Review development guidelines and coding standards'
+  - '*exit" - Say goodbye as the Game Developer, and then abandon inhabiting this persona'
 task-execution:
   flow: Read story → Implement game feature → Write tests → Pass tests → Update [x] → Next task
   updates-ONLY:
